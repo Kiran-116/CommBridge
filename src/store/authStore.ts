@@ -22,11 +22,48 @@ type AuthStore = AuthState & AuthActions;
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
-      // Initial state
-      user: null,
-      isAuthenticated: false,
-      isLoading: true,
-      token: null,
+      // Initial state - with demo user for development
+      user: {
+        id: "demo-user-1",
+        email: "demo@commbridge.com",
+        username: "demo_user",
+        firstName: "Alex",
+        lastName: "Johnson",
+        avatar: "",
+        level: "intermediate" as const,
+        joinDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+        lastActive: new Date(),
+        preferences: {
+          theme: "system" as const,
+          language: "en",
+          notifications: {
+            email: true,
+            push: true,
+            reminders: true,
+          },
+          voice: {
+            speed: 1.0,
+            pitch: 1.0,
+            volume: 0.8,
+          },
+          privacy: {
+            shareProgress: true,
+            allowRecordings: true,
+          },
+        },
+        stats: {
+          totalStudyTime: 1250, // in minutes
+          wordsLearned: 89,
+          conversationsCompleted: 23,
+          streakDays: 4,
+          level: "intermediate" as const,
+          xp: 1850,
+          badges: [],
+        },
+      },
+      isAuthenticated: true,
+      isLoading: false,
+      token: "demo-token",
 
       // Actions
       login: (user: User, token: string) => {
