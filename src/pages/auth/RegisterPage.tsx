@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useAuthStore } from "@/store/authStore";
+import { User } from "@/types";
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -51,20 +52,42 @@ const RegisterPage = () => {
       // Mock registration - replace with actual API call
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      const mockUser = {
+      const mockUser: User = {
         id: Date.now().toString(),
         email: formData.email,
-        name: formData.name,
+        username: formData.email.split("@")[0],
+        firstName: formData.name.split(" ")[0] || "New",
+        lastName: formData.name.split(" ").slice(1).join(" ") || "User",
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.email}`,
-        level: 1,
-        xp: 0,
-        streak: 0,
-        joinedAt: new Date().toISOString(),
+        level: "beginner" as const,
+        joinDate: new Date(),
+        lastActive: new Date(),
         preferences: {
+          theme: "system" as const,
           language: "en",
-          difficulty: "beginner",
-          voiceEnabled: true,
-          notifications: true,
+          notifications: {
+            email: true,
+            push: true,
+            reminders: true,
+          },
+          voice: {
+            speed: 1.0,
+            pitch: 1.0,
+            volume: 0.8,
+          },
+          privacy: {
+            shareProgress: true,
+            allowRecordings: true,
+          },
+        },
+        stats: {
+          totalStudyTime: 0,
+          wordsLearned: 0,
+          conversationsCompleted: 0,
+          streakDays: 0,
+          level: "beginner" as const,
+          xp: 0,
+          badges: [],
         },
       };
 

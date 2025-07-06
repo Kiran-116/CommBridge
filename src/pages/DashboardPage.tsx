@@ -17,8 +17,7 @@ import { useLearningStore } from "@/store/learningStore";
 
 const DashboardPage = () => {
   const { user } = useAuthStore();
-  const { dailyGoal, weeklyStats, recentActivities, achievements } =
-    useLearningStore();
+  const { dailyGoal, weeklyStats, recentActivities } = useLearningStore();
 
   const quickActions = [
     {
@@ -58,6 +57,14 @@ const DashboardPage = () => {
     accuracyScore: 87,
   };
 
+  // Get the display name from user
+  const displayName = user ? `${user.firstName} ${user.lastName}` : "User";
+
+  // Get user stats with fallbacks
+  const userLevel = user?.stats?.level || user?.level || "beginner";
+  const userXP = user?.stats?.xp || 0;
+  const userStreak = user?.stats?.streakDays || 0;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Welcome Section */}
@@ -68,7 +75,7 @@ const DashboardPage = () => {
           transition={{ duration: 0.6 }}
         >
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, {user?.name}! 👋
+            Welcome back, {displayName}! 👋
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
             Ready to continue your communication journey?
@@ -87,19 +94,17 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm font-medium">Level</p>
-              <p className="text-2xl font-bold">{user?.level}</p>
+              <p className="text-2xl font-bold capitalize">{userLevel}</p>
             </div>
             <TrophyIcon className="h-8 w-8 text-blue-200" />
           </div>
           <div className="mt-4 bg-blue-400 rounded-full h-2">
             <div
               className="bg-white h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((user?.xp || 0) % 1000) / 10}%` }}
+              style={{ width: `${(userXP % 1000) / 10}%` }}
             />
           </div>
-          <p className="text-blue-100 text-xs mt-1">
-            {(user?.xp || 0) % 1000}/1000 XP
-          </p>
+          <p className="text-blue-100 text-xs mt-1">{userXP % 1000}/1000 XP</p>
         </motion.div>
 
         <motion.div
@@ -111,7 +116,7 @@ const DashboardPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm font-medium">Streak</p>
-              <p className="text-2xl font-bold">{user?.streak || 0}</p>
+              <p className="text-2xl font-bold">{userStreak}</p>
             </div>
             <FireIcon className="h-8 w-8 text-green-200" />
           </div>
@@ -258,8 +263,8 @@ const DashboardPage = () => {
             Recent Activities
           </h3>
           <div className="space-y-4">
-            {recentActivities.slice(0, 4).map((activity, index) => (
-              <div key={index} className="flex items-center space-x-3">
+            {recentActivities.slice(0, 4).map((activity) => (
+              <div key={activity.id} className="flex items-center space-x-3">
                 <div className="flex-shrink-0">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                 </div>

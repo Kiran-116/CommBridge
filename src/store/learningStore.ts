@@ -1,13 +1,33 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
-  VocabularyWord,
   WordProgress,
   LearningSession,
   DailyChallenge,
   ConversationMessage,
   VoiceRecording,
+  Badge,
 } from "@/types";
+
+interface WeeklyStats {
+  sessionsCompleted: number;
+  minutesPracticed: number;
+  wordsLearned: number;
+  averageScore: number;
+}
+
+interface DailyGoal {
+  target: number;
+  completed: number;
+  type: "minutes" | "words" | "sessions";
+}
+
+interface RecentActivity {
+  id: string;
+  description: string;
+  timestamp: Date;
+  type: "vocabulary" | "conversation" | "pronunciation" | "achievement";
+}
 
 interface LearningState {
   currentSession: LearningSession | null;
@@ -19,6 +39,11 @@ interface LearningState {
   totalStudyTime: number;
   wordsLearned: number;
   xp: number;
+  // New properties for dashboard
+  dailyGoal: DailyGoal;
+  weeklyStats: WeeklyStats;
+  recentActivities: RecentActivity[];
+  achievements: Badge[];
 }
 
 interface LearningActions {
@@ -42,6 +67,8 @@ interface LearningActions {
   resetProgress: () => void;
   getWordProgress: (wordId: string) => WordProgress | null;
   getTodaysChallenge: () => DailyChallenge | null;
+  addRecentActivity: (activity: Omit<RecentActivity, "id">) => void;
+  updateDailyGoal: (progress: number) => void;
 }
 
 type LearningStore = LearningState & LearningActions;
@@ -59,6 +86,62 @@ export const useLearningStore = create<LearningStore>()(
       totalStudyTime: 0,
       wordsLearned: 0,
       xp: 0,
+      // New initial state
+      dailyGoal: {
+        target: 30,
+        completed: 18,
+        type: "minutes",
+      },
+      weeklyStats: {
+        sessionsCompleted: 7,
+        minutesPracticed: 145,
+        wordsLearned: 23,
+        averageScore: 85,
+      },
+      recentActivities: [
+        {
+          id: "1",
+          description: "Completed Business Conversation practice",
+          timestamp: new Date(Date.now() - 1000 * 60 * 30),
+          type: "conversation",
+        },
+        {
+          id: "2",
+          description: "Learned 5 new vocabulary words",
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+          type: "vocabulary",
+        },
+        {
+          id: "3",
+          description: "Achieved 7-day streak!",
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+          type: "achievement",
+        },
+        {
+          id: "4",
+          description: "Completed pronunciation exercise",
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
+          type: "pronunciation",
+        },
+      ],
+      achievements: [
+        {
+          id: "1",
+          name: "First Steps",
+          description: "Complete your first learning session",
+          icon: "🏆",
+          earnedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
+          category: "special",
+        },
+        {
+          id: "2",
+          name: "Week Warrior",
+          description: "Maintain a 7-day learning streak",
+          icon: "🔥",
+          earnedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1),
+          category: "streak",
+        },
+      ],
 
       // Actions
       startSession: (type) => {
@@ -85,13 +168,6 @@ export const useLearningStore = create<LearningStore>()(
         const { currentSession, totalStudyTime, xp } = get();
 
         if (currentSession) {
-          const updatedSession = {
-            ...currentSession,
-            endTime: new Date(),
-            duration: results.timeSpent,
-            results,
-          };
-
           set({
             currentSession: null,
             totalStudyTime: totalStudyTime + results.timeSpent,
@@ -199,6 +275,27 @@ export const useLearningStore = create<LearningStore>()(
           ) || null
         );
       },
+
+      addRecentActivity: (activity) => {
+        const { recentActivities } = get();
+        const newActivity: RecentActivity = {
+          ...activity,
+          id: Date.now().toString(),
+        };
+        set({
+          recentActivities: [newActivity, ...recentActivities].slice(0, 10),
+        });
+      },
+
+      updateDailyGoal: (progress) => {
+        const { dailyGoal } = get();
+        set({
+          dailyGoal: {
+            ...dailyGoal,
+            completed: Math.min(progress, dailyGoal.target),
+          },
+        });
+      },
     }),
     {
       name: "learning-storage",
@@ -209,6 +306,10 @@ export const useLearningStore = create<LearningStore>()(
         totalStudyTime: state.totalStudyTime,
         wordsLearned: state.wordsLearned,
         xp: state.xp,
+        dailyGoal: state.dailyGoal,
+        weeklyStats: state.weeklyStats,
+        recentActivities: state.recentActivities,
+        achievements: state.achievements,
       }),
     }
   )

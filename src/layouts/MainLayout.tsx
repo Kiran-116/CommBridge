@@ -34,7 +34,7 @@ const secondaryNavigation = [
 ];
 
 export default function MainLayout() {
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { xp, studyStreak } = useLearningStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

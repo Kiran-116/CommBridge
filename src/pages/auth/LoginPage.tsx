@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useAuthStore } from "@/store/authStore";
+import { User } from "@/types";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -38,20 +39,53 @@ const LoginPage = () => {
       // Mock authentication - replace with actual API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const mockUser = {
+      const mockUser: User = {
         id: "1",
         email: formData.email,
-        name: formData.email.split("@")[0],
+        username: formData.email.split("@")[0],
+        firstName:
+          formData.email.split("@")[0].charAt(0).toUpperCase() +
+          formData.email.split("@")[0].slice(1),
+        lastName: "User",
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.email}`,
-        level: 1,
-        xp: 0,
-        streak: 0,
-        joinedAt: new Date().toISOString(),
+        level: "beginner" as const,
+        joinDate: new Date(),
+        lastActive: new Date(),
         preferences: {
+          theme: "system" as const,
           language: "en",
-          difficulty: "beginner",
-          voiceEnabled: true,
-          notifications: true,
+          notifications: {
+            email: true,
+            push: true,
+            reminders: true,
+          },
+          voice: {
+            speed: 1.0,
+            pitch: 1.0,
+            volume: 0.8,
+          },
+          privacy: {
+            shareProgress: true,
+            allowRecordings: true,
+          },
+        },
+        stats: {
+          totalStudyTime: 145,
+          wordsLearned: 23,
+          conversationsCompleted: 7,
+          streakDays: 5,
+          level: "beginner" as const,
+          xp: 850,
+          badges: [
+            {
+              id: "1",
+              name: "First Steps",
+              description: "Complete your first learning session",
+              icon: "🏆",
+              earnedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
+              category: "special" as const,
+            },
+          ],
         },
       };
 
