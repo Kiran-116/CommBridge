@@ -1,498 +1,414 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
 import {
-  TrophyIcon,
-  FireIcon,
   ClockIcon,
-  CheckCircleIcon,
   BookmarkIcon,
   ChatBubbleLeftRightIcon,
-  MicrophoneIcon,
-  UserGroupIcon,
+  CheckCircleIcon,
+  FireIcon,
+  TrophyIcon,
   CalendarDaysIcon,
-  AcademicCapIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthStore } from "@/store/authStore";
-import { useLearningStore } from "@/store/learningStore";
 
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ElementType;
-  color: string;
-  progress: number;
-  target: number;
-  unlocked: boolean;
-  unlockedDate?: Date;
-}
+const iconStyle = { width: 32, height: 32, marginBottom: 8 };
 
-interface ProgressMetric {
-  label: string;
-  value: number;
-  previousValue: number;
-  unit: string;
-  icon: React.ElementType;
-  color: string;
-}
+// Only use this mockWeeklyData array for the static chart
+const mockWeeklyData = [
+  { day: "Mon", minutes: 45 },
+  { day: "Tue", minutes: 60 },
+  { day: "Wed", minutes: 30 },
+  { day: "Thu", minutes: 75 },
+  { day: "Fri", minutes: 90 },
+  { day: "Sat", minutes: 40 },
+  { day: "Sun", minutes: 55 },
+];
+const maxMinutes = Math.max(...mockWeeklyData.map((d) => d.minutes));
 
-interface StudySession {
-  date: string;
-  duration: number;
-  wordsLearned: number;
-  conversationsCompleted: number;
-  accuracy: number;
-}
+const streakDays = 4; // static for now
 
-// Mock achievements
-const mockAchievements: Achievement[] = [
+const achievements = [
   {
-    id: "first_conversation",
+    id: "first_chat",
     title: "First Chat",
     description: "Complete your first AI conversation",
     icon: ChatBubbleLeftRightIcon,
-    color: "bg-blue-500",
+    color: "#3b82f6",
     progress: 1,
     target: 1,
     unlocked: true,
-    unlockedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
   },
   {
-    id: "vocabulary_master",
+    id: "word_wizard",
     title: "Word Wizard",
     description: "Master 50 vocabulary words",
     icon: BookmarkIcon,
-    color: "bg-green-500",
+    color: "#22c55e",
     progress: 23,
     target: 50,
     unlocked: false,
   },
   {
-    id: "week_streak",
+    id: "consistent_learner",
     title: "Consistent Learner",
     description: "Maintain a 7-day learning streak",
     icon: FireIcon,
-    color: "bg-orange-500",
+    color: "#f97316",
     progress: 4,
     target: 7,
     unlocked: false,
   },
 ];
 
-// Mock weekly data
-const mockWeeklyData: StudySession[] = [
+const activities = [
   {
-    date: "Mon",
-    duration: 45,
-    wordsLearned: 12,
-    conversationsCompleted: 2,
-    accuracy: 85,
+    id: 1,
+    type: "conversation",
+    icon: ChatBubbleLeftRightIcon,
+    color: "#3b82f6",
+    description: "Completed Business Conversation practice",
+    timestamp: "Today, 10:30 AM",
   },
   {
-    date: "Tue",
-    duration: 60,
-    wordsLearned: 15,
-    conversationsCompleted: 3,
-    accuracy: 88,
+    id: 2,
+    type: "vocabulary",
+    icon: BookmarkIcon,
+    color: "#22c55e",
+    description: "Learned 5 new vocabulary words",
+    timestamp: "Yesterday, 8:15 PM",
   },
   {
-    date: "Wed",
-    duration: 30,
-    wordsLearned: 8,
-    conversationsCompleted: 1,
-    accuracy: 92,
+    id: 3,
+    type: "achievement",
+    icon: TrophyIcon,
+    color: "#eab308",
+    description: "Achieved 7-day streak!",
+    timestamp: "2 days ago, 6:00 PM",
   },
   {
-    date: "Thu",
-    duration: 75,
-    wordsLearned: 18,
-    conversationsCompleted: 4,
-    accuracy: 87,
-  },
-  {
-    date: "Fri",
-    duration: 90,
-    wordsLearned: 22,
-    conversationsCompleted: 5,
-    accuracy: 91,
-  },
-  {
-    date: "Sat",
-    duration: 40,
-    wordsLearned: 10,
-    conversationsCompleted: 2,
-    accuracy: 89,
-  },
-  {
-    date: "Sun",
-    duration: 55,
-    wordsLearned: 14,
-    conversationsCompleted: 3,
-    accuracy: 86,
+    id: 4,
+    type: "pronunciation",
+    icon: CheckCircleIcon,
+    color: "#a21caf",
+    description: "Completed pronunciation exercise",
+    timestamp: "3 days ago, 9:45 AM",
   },
 ];
 
 const ProgressPage = () => {
-  const { user, isAuthenticated } = useAuthStore();
-  const { recentActivities = [] } = useLearningStore();
-  const [selectedTimeframe, setSelectedTimeframe] = useState<
-    "week" | "month" | "year"
-  >("week");
-
-  // Default user stats if user is not authenticated or missing stats
-  const userStats = user?.stats || {
-    streakDays: 4,
-    totalStudyTime: 145,
-    wordsLearned: 23,
-    conversationsCompleted: 12,
-    level: "intermediate" as const,
-    xp: 1250,
-    badges: [],
-  };
-
-  const progressMetrics: ProgressMetric[] = [
-    {
-      label: "Study Time",
-      value: 395,
-      previousValue: 320,
-      unit: "minutes",
-      icon: ClockIcon,
-      color: "text-blue-500",
-    },
-    {
-      label: "Words Learned",
-      value: userStats.wordsLearned,
-      previousValue: 65,
-      unit: "words",
-      icon: BookmarkIcon,
-      color: "text-green-500",
-    },
-    {
-      label: "Conversations",
-      value: userStats.conversationsCompleted,
-      previousValue: 18,
-      unit: "chats",
-      icon: ChatBubbleLeftRightIcon,
-      color: "text-purple-500",
-    },
-    {
-      label: "Accuracy",
-      value: 87,
-      previousValue: 84,
-      unit: "%",
-      icon: CheckCircleIcon,
-      color: "text-orange-500",
-    },
-  ];
-
-  const getProgressPercentage = (current: number, target: number) => {
-    return Math.min((current / target) * 100, 100);
-  };
-
-  const getTrendIcon = (current: number, previous: number) => {
-    if (current > previous) {
-      return <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />;
-    } else if (current < previous) {
-      return <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />;
-    }
-    return null;
-  };
-
-  const calculateChange = (current: number, previous: number) => {
-    if (previous === 0) return 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  const maxDuration = Math.max(...mockWeeklyData.map((d) => d.duration));
+  const { user } = useAuthStore();
+  const stats = user?.stats;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          Learning Progress
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Track your learning journey and celebrate your achievements
-        </p>
-      </div>
+    <div style={{ padding: 40, background: "#fff", color: "#222" }}>
+      <h1 style={{ fontSize: 32, marginBottom: 16 }}>Progress Page</h1>
+      <p style={{ fontSize: 20 }}>
+        This is a static test. If you see this, static content works!
+      </p>
 
-      {/* Progress Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {progressMetrics.map((metric, index) => {
-          const change = calculateChange(metric.value, metric.previousValue);
-          return (
-            <motion.div
-              key={metric.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div
-                  className={`p-3 rounded-lg bg-gray-100 dark:bg-gray-700 ${metric.color}`}
-                >
-                  <metric.icon className="h-6 w-6" />
-                </div>
-                {getTrendIcon(metric.value, metric.previousValue)}
-              </div>
-
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-                {metric.value}
-                {metric.unit}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-                {metric.label}
-              </p>
-
-              <div className="flex items-center space-x-2">
-                <span
-                  className={`text-sm font-medium ${
-                    change > 0
-                      ? "text-green-600"
-                      : change < 0
-                      ? "text-red-600"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {change > 0 ? "+" : ""}
-                  {change.toFixed(1)}%
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  vs last {selectedTimeframe}
-                </span>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {/* Weekly Activity Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Weekly Activity
-            </h3>
-            <div className="flex space-x-2">
-              {["week", "month", "year"].map((timeframe) => (
-                <button
-                  key={timeframe}
-                  onClick={() => setSelectedTimeframe(timeframe as any)}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    selectedTimeframe === timeframe
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Simple Bar Chart */}
-          <div className="space-y-4">
-            {mockWeeklyData.map((session) => (
-              <div key={session.date} className="flex items-center space-x-4">
-                <div className="w-8 text-sm text-gray-600 dark:text-gray-400">
-                  {session.date}
-                </div>
-                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 relative">
-                  <div
-                    className="bg-blue-500 h-4 rounded-full transition-all duration-1000 ease-out"
-                    style={{
-                      width: `${(session.duration / maxDuration) * 100}%`,
-                    }}
-                  ></div>
-                </div>
-                <div className="w-16 text-sm text-gray-900 dark:text-white font-medium">
-                  {session.duration}m
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {mockWeeklyData.reduce(
-                    (sum, session) => sum + session.duration,
-                    0
-                  )}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Total Minutes
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {mockWeeklyData.reduce(
-                    (sum, session) => sum + session.wordsLearned,
-                    0
-                  )}
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Words Learned
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {Math.round(
-                    mockWeeklyData.reduce(
-                      (sum, session) => sum + session.accuracy,
-                      0
-                    ) / mockWeeklyData.length
-                  )}
-                  %
-                </p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Avg Accuracy
-                </p>
-              </div>
-            </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 24,
+          marginTop: 40,
+        }}
+      >
+        <div
+          style={{
+            background: "#f3f4f6",
+            borderRadius: 12,
+            padding: 24,
+            textAlign: "center",
+          }}
+        >
+          <ClockIcon style={iconStyle} />
+          <div style={{ fontSize: 18, marginBottom: 8 }}>Study Time</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}>
+            {stats?.totalStudyTime ?? 0} min
           </div>
         </div>
-
-        {/* Learning Streak */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <div className="flex items-center mb-6">
-            <FireIcon className="h-8 w-8 text-orange-500 mr-3" />
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Learning Streak
-            </h3>
+        <div
+          style={{
+            background: "#f3f4f6",
+            borderRadius: 12,
+            padding: 24,
+            textAlign: "center",
+          }}
+        >
+          <BookmarkIcon style={iconStyle} />
+          <div style={{ fontSize: 18, marginBottom: 8 }}>Words Learned</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}>
+            {stats?.wordsLearned ?? 0}
           </div>
+        </div>
+        <div
+          style={{
+            background: "#f3f4f6",
+            borderRadius: 12,
+            padding: 24,
+            textAlign: "center",
+          }}
+        >
+          <ChatBubbleLeftRightIcon style={iconStyle} />
+          <div style={{ fontSize: 18, marginBottom: 8 }}>Conversations</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}>
+            {stats?.conversationsCompleted ?? 0}
+          </div>
+        </div>
+        <div
+          style={{
+            background: "#f3f4f6",
+            borderRadius: 12,
+            padding: 24,
+            textAlign: "center",
+          }}
+        >
+          <CheckCircleIcon style={iconStyle} />
+          <div style={{ fontSize: 18, marginBottom: 8 }}>Accuracy</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}>87%</div>
+        </div>
+      </div>
 
-          <div className="text-center mb-6">
-            <div className="text-6xl font-bold text-orange-500 mb-2">
-              {userStats.streakDays}
+      {/* Weekly Activity Chart */}
+      <div
+        style={{
+          marginTop: 48,
+          background: "#f9fafb",
+          borderRadius: 12,
+          padding: 32,
+          maxWidth: 600,
+        }}
+      >
+        <h2 style={{ fontSize: 24, marginBottom: 24 }}>Weekly Activity</h2>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 16,
+            height: 120,
+          }}
+        >
+          {mockWeeklyData.map((d) => (
+            <div key={d.day} style={{ flex: 1, textAlign: "center" }}>
+              <div
+                style={{
+                  background: "#3b82f6",
+                  height: `${(d.minutes / maxMinutes) * 100}%`,
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  transition: "height 0.5s",
+                }}
+              />
+              <div style={{ fontSize: 16, color: "#555" }}>{d.day}</div>
+              <div style={{ fontSize: 14, color: "#888" }}>{d.minutes}m</div>
             </div>
-            <p className="text-gray-600 dark:text-gray-400">Days in a row</p>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          {/* Calendar View */}
-          <div className="grid grid-cols-7 gap-2 mb-4">
-            {Array.from({ length: 21 }, (_, i) => {
-              const isActive = i >= 21 - userStats.streakDays;
-              const isToday = i === 20;
-              return (
-                <div
-                  key={i}
-                  className={`aspect-square rounded-lg flex items-center justify-center text-xs font-medium ${
-                    isActive
-                      ? isToday
-                        ? "bg-orange-500 text-white"
-                        : "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-400"
-                  }`}
-                >
-                  {i + 1}
-                </div>
-              );
-            })}
+      {/* Learning Streak */}
+      <div
+        style={{
+          marginTop: 48,
+          background: "#fff7ed",
+          borderRadius: 12,
+          padding: 32,
+          maxWidth: 600,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 24,
+          }}
+        >
+          <FireIcon
+            style={{ width: 32, height: 32, color: "#f97316", marginRight: 12 }}
+          />
+          <h2 style={{ fontSize: 24, color: "#ea580c", margin: 0 }}>
+            Learning Streak
+          </h2>
+        </div>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div
+            style={{
+              fontSize: 48,
+              fontWeight: 700,
+              color: "#f97316",
+            }}
+          >
+            {streakDays}
           </div>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Keep going! You're doing great 🔥
-            </p>
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
-              <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
-                Streak Goal: 7 days
-              </p>
-              <div className="w-full bg-orange-200 dark:bg-orange-800 rounded-full h-2 mt-2">
-                <div
-                  className="bg-orange-500 h-2 rounded-full transition-all duration-500"
-                  style={{
-                    width: `${(userStats.streakDays / 7) * 100}%`,
-                  }}
-                ></div>
+          <div style={{ color: "#ea580c", fontSize: 18 }}>Days in a row</div>
+        </div>
+        {/* Calendar grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: 6,
+            marginBottom: 16,
+          }}
+        >
+          {Array.from({ length: 21 }, (_, i) => {
+            const isActive = i >= 21 - streakDays;
+            const isToday = i === 20;
+            return (
+              <div
+                key={i}
+                style={{
+                  aspectRatio: "1/1",
+                  borderRadius: 6,
+                  background: isActive
+                    ? isToday
+                      ? "#f97316"
+                      : "#fed7aa"
+                    : "#f3f4f6",
+                  color: isActive ? (isToday ? "#fff" : "#ea580c") : "#bbb",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+              >
+                {i + 1}
               </div>
-            </div>
-          </div>
+            );
+          })}
+        </div>
+        {/* Progress bar */}
+        <div
+          style={{
+            background: "#fed7aa",
+            borderRadius: 8,
+            height: 8,
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              background: "#f97316",
+              height: 8,
+              borderRadius: 8,
+              width: `${(streakDays / 7) * 100}%`,
+              transition: "width 0.5s",
+            }}
+          />
+        </div>
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 8,
+            color: "#ea580c",
+            fontSize: 14,
+          }}
+        >
+          Streak Goal: 7 days
         </div>
       </div>
 
       {/* Achievements */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-        <div className="flex items-center mb-6">
-          <TrophyIcon className="h-8 w-8 text-yellow-500 mr-3" />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <div
+        style={{
+          marginTop: 48,
+          background: "#fef9c3",
+          borderRadius: 12,
+          padding: 32,
+          maxWidth: 900,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 24,
+          }}
+        >
+          <TrophyIcon
+            style={{ width: 32, height: 32, color: "#eab308", marginRight: 12 }}
+          />
+          <h2 style={{ fontSize: 24, color: "#eab308", margin: 0 }}>
             Achievements
-          </h3>
+          </h2>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockAchievements.map((achievement) => {
-            const progress = getProgressPercentage(
-              achievement.progress,
-              achievement.target
-            );
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 24,
+          }}
+        >
+          {achievements.map((ach) => {
+            const percent = Math.min((ach.progress / ach.target) * 100, 100);
             return (
               <div
-                key={achievement.id}
-                className={`relative p-6 rounded-xl border-2 transition-all ${
-                  achievement.unlocked
-                    ? "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20"
-                    : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50"
-                }`}
+                key={ach.id}
+                style={{
+                  background: "#fff",
+                  borderRadius: 12,
+                  padding: 24,
+                  boxShadow: ach.unlocked
+                    ? "0 0 0 2px #fde68a"
+                    : "0 0 0 1px #e5e7eb",
+                }}
               >
-                {achievement.unlocked && (
-                  <div className="absolute -top-2 -right-2">
-                    <div className="bg-yellow-500 text-white rounded-full p-2">
-                      <CheckCircleIcon className="h-4 w-4" />
-                    </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <ach.icon
+                    style={{
+                      width: 28,
+                      height: 28,
+                      color: ach.color,
+                      marginRight: 10,
+                    }}
+                  />
+                  <div style={{ fontWeight: 600, fontSize: 18 }}>
+                    {ach.title}
                   </div>
-                )}
-
-                <div className="flex items-start space-x-4">
+                  {ach.unlocked && (
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        color: "#eab308",
+                        fontWeight: 700,
+                      }}
+                    >
+                      ✓
+                    </span>
+                  )}
+                </div>
+                <div style={{ color: "#666", fontSize: 15, marginBottom: 16 }}>
+                  {ach.description}
+                </div>
+                <div
+                  style={{
+                    background: "#f3f4f6",
+                    borderRadius: 8,
+                    height: 8,
+                    width: "100%",
+                    marginBottom: 8,
+                  }}
+                >
                   <div
-                    className={`${achievement.color} text-white p-3 rounded-lg`}
-                  >
-                    <achievement.icon className="h-6 w-6" />
-                  </div>
-
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-                      {achievement.title}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                      {achievement.description}
-                    </p>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Progress
-                        </span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {achievement.progress} / {achievement.target}
-                        </span>
-                      </div>
-
-                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-500 ${
-                            achievement.unlocked
-                              ? "bg-yellow-500"
-                              : "bg-gray-400"
-                          }`}
-                          style={{ width: `${progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {achievement.unlocked && achievement.unlockedDate && (
-                      <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
-                        Unlocked {achievement.unlockedDate.toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
+                    style={{
+                      background: ach.unlocked ? "#eab308" : ach.color,
+                      height: 8,
+                      borderRadius: 8,
+                      width: `${percent}%`,
+                      transition: "width 0.5s",
+                    }}
+                  />
+                </div>
+                <div
+                  style={{ fontSize: 14, color: "#888", textAlign: "right" }}
+                >
+                  {ach.progress} / {ach.target}
                 </div>
               </div>
             );
@@ -501,79 +417,67 @@ const ProgressPage = () => {
       </div>
 
       {/* Recent Activities */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Recent Activities
-        </h3>
-
-        <div className="space-y-4">
-          {recentActivities.slice(0, 8).map((activity) => {
-            const getActivityIcon = () => {
-              switch (activity.type) {
-                case "vocabulary":
-                  return BookmarkIcon;
-                case "conversation":
-                  return ChatBubbleLeftRightIcon;
-                case "pronunciation":
-                  return MicrophoneIcon;
-                case "achievement":
-                  return TrophyIcon;
-                default:
-                  return AcademicCapIcon;
-              }
-            };
-
-            const getActivityColor = () => {
-              switch (activity.type) {
-                case "vocabulary":
-                  return "text-green-500";
-                case "conversation":
-                  return "text-blue-500";
-                case "pronunciation":
-                  return "text-purple-500";
-                case "achievement":
-                  return "text-yellow-500";
-                default:
-                  return "text-gray-500";
-              }
-            };
-
-            const ActivityIcon = getActivityIcon();
-
-            return (
-              <div
-                key={activity.id}
-                className="flex items-center space-x-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50"
-              >
-                <div
-                  className={`p-2 rounded-lg bg-white dark:bg-gray-800 ${getActivityColor()}`}
-                >
-                  <ActivityIcon className="h-5 w-5" />
+      <div
+        style={{
+          marginTop: 48,
+          background: "#f3f4f6",
+          borderRadius: 12,
+          padding: 32,
+          maxWidth: 700,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 24,
+          }}
+        >
+          <CalendarDaysIcon
+            style={{ width: 32, height: 32, color: "#64748b", marginRight: 12 }}
+          />
+          <h2 style={{ fontSize: 24, color: "#334155", margin: 0 }}>
+            Recent Activities
+          </h2>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+          }}
+        >
+          {activities.map((act) => (
+            <div
+              key={act.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                background: "#fff",
+                borderRadius: 10,
+                padding: 18,
+                boxShadow: "0 0 0 1px #e5e7eb",
+              }}
+            >
+              <act.icon
+                style={{
+                  width: 24,
+                  height: 24,
+                  color: act.color,
+                  marginRight: 16,
+                }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 500, fontSize: 16 }}>
+                  {act.description}
                 </div>
-
-                <div className="flex-1">
-                  <p className="text-gray-900 dark:text-white font-medium">
-                    {activity.description}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {activity.timestamp.toLocaleDateString()} at{" "}
-                    {activity.timestamp.toLocaleTimeString()}
-                  </p>
+                <div style={{ color: "#888", fontSize: 14 }}>
+                  {act.timestamp}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
-
-        {recentActivities.length === 0 && (
-          <div className="text-center py-8">
-            <CalendarDaysIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">
-              No recent activities yet. Start learning to see your progress
-              here!
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
